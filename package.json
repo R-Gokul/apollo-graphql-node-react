@@ -1,0 +1,26 @@
+{
+  "name": "apollo-graphql-node-react",
+  "version": "1.0.0",
+  "description": "apollo graphQl as express end point  with react js connection",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "graphql",
+    "apollo",
+    "express",
+    "react",
+    "JS"
+  ],
+  "author": "gokul",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server-express": "^1.4.0",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "graphql": "^15.5.0",
+    "graphql-tools": "^7.0.2"
+  }
+}
