@@ -18,12 +18,26 @@ const books = [
 // The GraphQL schema in string form
 const typeDefs = `
   type Query { books: [Book] }
+  type Mutation{ addBook(
+    title: String!,
+    author: String
+  ): Book }
   type Book { title: String, author: String }
 `;
 
 // The resolvers
 const resolvers = {
-  Query: { books: () => books },
+  Query: { books: (obj, args,context, info) => { console.log(context.auth)
+                        return books} },
+  Mutation:{
+    addBook:(obj, args, context)=>{
+      console.log("args", args);
+      console.log("obj", obj);
+      const { title, author} = args
+      books.push({title, author:author||'unknown'})
+      return books[books.length-1];
+    }
+  }
 };
 
 // Put together a schema
@@ -32,11 +46,40 @@ const schema = makeExecutableSchema({
   resolvers,
 });
 
+const authUser = (req) => {
+    return { user:1234, role:'admin'}
+}
 // Initialize the app
 const app = express();
 
 // The GraphQL endpoint
-app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }));
+// app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }));
+//option 2
+app.use('/graphql', bodyParser.json(), graphqlExpress(req=>{
+  const reqUser = authUser(req); 
+  return {
+    schema,
+    context: {auth: reqUser},
+    customFormatErrorFn: err => {
+      if (err.originalError && err.originalError.error_message) {
+        err.message = "myMesage";
+      }
+      err.message ="you will be okay";
+      return err;
+    }
+  }
+}))
+//option 3
+// var reqUser;
+// app.use((req, res, next)=> {
+//   reqUser = authUser(req); 
+//   next();
+// })
+
+// app.use('/graphql', bodyParser.json(), graphqlExpress({
+//     schema,
+//     context: {auth: reqUser}
+//   }));
 
 // GraphiQL, a visual editor for queries
 app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
