@@ -1,78 +1,62 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const { graphqlExpress, graphiqlExpress } = require('apollo-server-express');
-const { makeExecutableSchema } = require('graphql-tools');
+const express = require("express");
+const bodyParser = require("body-parser");
+const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
+const { makeExecutableSchema } = require("graphql-tools");
+const { author: Author, resolvers: authResolvers } = require("./schema/author");
+const { books: Book, resolvers: bookResolvers } = require("./schema/book");
+var _= require('lodash/fp/object');
 
-// Some fake data
-const books = [
-  {
-    title: "Harry Potter and the Sorcerer's stone",
-    author: 'J.K. Rowling',
-  },
-  {
-    title: 'Jurassic Park',
-    author: 'Michael Crichton',
-  },
-];
-
-// The GraphQL schema in string form
-const typeDefs = `
-  type Query { books: [Book] }
-  type Mutation{ addBook(
-    title: String!,
-    author: String
-  ): Book }
-  type Book { title: String, author: String }
+const Query = `
+type Query { _empty: String }
+type Mutation { _empty: String }
 `;
 
 // The resolvers
-const resolvers = {
-  Query: { books: (obj, args,context, info) => { console.log(context.auth)
-                        return books} },
-  Mutation:{
-    addBook:(obj, args, context)=>{
-      console.log("args", args);
-      console.log("obj", obj);
-      const { title, author} = args
-      books.push({title, author:author||'unknown'})
-      return books[books.length-1];
-    }
-  }
-};
+// const resolvers = {
+//   ...bookResolvers,
+//   ...authResolvers,
+// };
+// const allRules = Object.assign({}, bookResolvers, authResolvers);
+const resolvers = _.merge(bookResolvers, authResolvers);
+// console.log(resolvers, allRules, _.merge(bookResolvers, authResolvers));
 
 // Put together a schema
 const schema = makeExecutableSchema({
-  typeDefs,
+  typeDefs: [Query, Author, Book],
   resolvers,
 });
 
 const authUser = (req) => {
-    return { user:1234, role:'admin'}
-}
+  return { user: 1234, role: "admin" };
+};
 // Initialize the app
 const app = express();
 
 // The GraphQL endpoint
 // app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }));
 //option 2
-app.use('/graphql', bodyParser.json(), graphqlExpress(req=>{
-  const reqUser = authUser(req); 
-  return {
-    schema,
-    context: {auth: reqUser},
-    customFormatErrorFn: err => {
-      if (err.originalError && err.originalError.error_message) {
-        err.message = "myMesage";
-      }
-      err.message ="you will be okay";
-      return err;
-    }
-  }
-}))
+app.use(
+  "/graphql",
+  bodyParser.json(),
+  graphqlExpress((req) => {
+    const reqUser = authUser(req);
+    return {
+      schema,
+      context: { auth: reqUser },
+      customFormatErrorFn: (err) => {
+        if (err.originalError && err.originalError.error_message) {
+          err.message = "myMesage";
+        }
+        err.message = "you will be okay";
+        return err;
+      },
+    };
+  })
+);
 //option 3
 // var reqUser;
 // app.use((req, res, next)=> {
-//   reqUser = authUser(req); 
+//   reqUser = authUser(req);
 //   next();
 // })
 
@@ -82,9 +66,9 @@ app.use('/graphql', bodyParser.json(), graphqlExpress(req=>{
 //   }));
 
 // GraphiQL, a visual editor for queries
-app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
+app.use("/graphiql", graphiqlExpress({ endpointURL: "/graphql" }));
 
 // Start the server
 app.listen(3000, () => {
-  console.log('Go to http://localhost:3000/graphiql to run queries!');
+  console.log("Go to http://localhost:3000/graphiql to run queries!");
 });
